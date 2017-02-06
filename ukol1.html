@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Úkol 1:Komplexní čísla</title>
+		<meta charset="UTF-8">
+		<meta name="author" content="Ondřej Doktor">
+        <style>
+			body { color: #333; background: white; margin: 100px; font: 16px/1.5 Georgia,serif; }
+			h1, h2 { font-weight: bold; font-family: sans-serif; margin: .6em 0 }
+			p { font: 16px/1.5 Georgia,serif; margin: 1.5em 0 }
+			small { font-size: 70%; color: gray }
+			table {	border-width: 1px; border-color: #666666; border-collapse: collapse; }
+			table th, table td { border-width: 1px;	padding: 5px; border-style: solid; border-color: #666666; background-color: #dedede; }
+			table td { background-color: #ffffff; }
+		</style>
+		
+		<script type="text/javascript"
+          src="https://www.google.com/jsapi?autoload={
+            'modules':[{
+              'name':'visualization',
+              'version':'1',
+              'packages':['corechart']
+            }]
+          }"></script>
+
+		<script type="text/javascript">
+			<!--
+			
+			/**
+			 *	Prevede komplexni cislo do gonimometrickeho tvaru.
+			 *	
+			 *	Jinak receno prevadi z kartezianskych souradnic (x, y)
+			 *	do polarnich souradnic (vzdalenost a uhel).	 
+			 */	 	
+			function toGonio(real, imag)
+			{
+				size = Math.sqrt(real*real + imag*imag);	// phytagorova veta
+				angle = Math.atan2(imag, real);				// uhlel je v radianech
+				
+// 				Dalo by se vracet misto radianu stupne? Ano:
+// 				angle = angle * 180 / Math.PI;
+				
+				return {size: size, angle: angle};
+			
+			}
+			
+			/**
+			 *	Prevede komplexni cislo z gonimometrickeho tvaru.
+			 *	
+			 *	Inverzni funkce k toGonio.
+			 */	 
+			function toComplex(size, angle)
+			{
+				real = size * Math.cos(angle);
+				imag = size * Math.sin(angle);
+				
+				return {real: real, imag: imag};
+			}
+			
+			/**
+			 *	Provede umocneni komplexniho cisla realnym cislem.
+			 */	 
+			function complexPow(real, imag, power)
+			{
+				var gonio = toGonio(real, imag);
+				
+				newSize = Math.pow(gonio.size, power);		// Vyuziva Euleruv vzorec: https://cs.wikipedia.org/wiki/Euler%C5%AFv_vzorec  
+				newAngle = gonio.angle * power;				// Tzn. prevede na gonio tvar, UMOCNI velikost, VYNASOBI uhel a prevede zpet na komplexni cislo.
+				
+				return toComplex(newSize, newAngle);
+			}
+			
+			/**
+			 *	Vykresli graf ze zadanych bodu (2D pole).
+			 *	Vyuziva Google Charts API
+			 */	 
+		    function drawChart(graf, maxCoordinate) {
+		         var data = new google.visualization.DataTable();
+		          data.addColumn('number', 'x');
+		          data.addColumn('number', 'y');
+		          data.addRows(graf);
+		
+				console.log(Math.round(maxCoordinate));
+		
+		        var options = {
+		          	title: 'Graf',
+		          	legend: { position: null },
+		          	vAxis: {
+					  	gridlines: { count: 8 },
+						viewWindow: {
+		          			max: maxCoordinate + 5,
+		          			min: -(maxCoordinate + 5),
+		        		}
+				  	},
+		          	hAxis: {
+						viewWindow: {
+		          			max: maxCoordinate + 5,
+		          			min: -(maxCoordinate + 5),
+		        		}
+					}
+		        };
+		
+		        var chart = new google.visualization.LineChart(document.getElementById('curve_chart'));
+		
+		        chart.draw(data, options);
+		    }
+			
+			/**
+			 *	Vypocita mocninu komplexniho cisla dle zadanych parametru
+			 *	ve formulari a zada vykresleni grafu.
+			 */	
+			function init (){
+			
+				var graf = [];
+				var maxCoordinate = 1;
+				
+				var form = document.getElementById('dataInput');
+				var r = form['real'].value;
+				var i = form['imag'].value;
+			
+				for (var power = 1, max = form['power'].value; power <= max; power++)
+				{
+					z = complexPow(r, i, power);
+			
+					graf.push([z.real, z.imag]);
+					
+					// tato cast pouze pocita podklady pro spravne vykresleni grafu - na funkci to nema vliv :)
+					if (Math.abs(z.real) > maxCoordinate) maxCoordinate = Math.abs(z.real);
+					if (Math.abs(z.imag) > maxCoordinate) maxCoordinate = Math.abs(z.imag); 
+					
+// 					console.log([Math.round(z.real), Math.round(z.imag)]);		// debugg
+			
+					var row = document.createElement('tr');
+					row.innerHTML = "<td>"+power+"</td><td>"+(Math.round(z.real) != 0 ? Math.round(z.real) : '')+" "+((Math.round(z.imag) > 0)?"+":'')+((Math.round(z.imag) != 0)? Math.round(z.imag)+"i" : '')+" </td>";
+					document.getElementById('resultTable').appendChild(row);
+				}
+				drawChart(graf, maxCoordinate);
+			}
+			
+			/**
+			 *	Prepocita a prekresli stranku pri zmene vstupnich dat.
+			 */	
+			function reDraw(){
+				table = document.getElementById('resultTable');
+				while (table.firstChild) {
+				    table.removeChild(table.firstChild);
+				}
+				init();
+			}
+			
+			// porvede prvni vypocet z vychozich dat po nacteni stranky
+			window.onload = init;
+		
+	
+	    	//-->
+	    </script>
+		
+	</head>
+	
+	<body>
+		
+		<h1>Úkol 1:Komplexní čísla</h1>
+		
+		<div id="curve_chart" style="width: 900px; height: 900px; float: right;"></div>
+		
+		<p>
+			Je dáno komplexní číslo <br><br>
+			z = 4/7(√3+i)
+		</p>
+		<p>
+			Spočtěte jeho n-té mocniny, n∈{1,…,20} <br>
+ 			a vykreslete je a jejich spojnici v Gausově rovině. Jakému geometrickému tvaru se jejich spojnice přibližuje? (<a href="https://www.wolframalpha.com/input/?i=logarithmic+spiral">Podobá se logarirmické spirále [WolframAlpha]</a>)
+		</p>
+		
+		<h2>Řešení</h2>
+		
+		<form id="dataInput" action="javascript: reDraw();">
+			Reální část: 		<input name="real" value="0.9897433186107869" onChange="javascript: reDraw();"> <small>Výchozí: (4 / 7) * Math.sqrt(3)</small> <br>
+			Imaginární část: 	<input name="imag" value="0.5714285714285714" onKeyup="javascript: reDraw();"> <small>Výchozí: 4 / 7</small> <br>
+			Exponent: 			<input name="power" value="20" onKeyup="javascript: reDraw();"><br>
+			<br>
+		
+		</form>
+		
+		<p><em>Pozn: pro názornost jsou hodnoty zaokrouhleny</em></p>
+		
+		<table>
+			<thead><th>Exponent</th><th>Výsledek</th></thead>
+			<tbody id="resultTable"><tbody>
+		</table>		
+		
+	</body>
+</html>
